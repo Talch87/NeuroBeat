@@ -32,5 +32,13 @@ class SNNClassifier(nn.Module):
             spk1, mem1 = self.lif1(cur1, mem1)
             cur2 = self.fc2(spk1)
             spk2, mem2 = self.lif2(cur2, mem2)
-            out_sum = out_sum + spk2
+            # Readout accumulates the output-layer MEMBRANE POTENTIAL, not its
+            # spikes. A spike-count readout has a dead-neuron trap: the loss is
+            # minimised by the network going silent (all-zero logits -> uniform
+            # softmax -> ln(n_classes)), and the surrogate gradient is too weak
+            # to escape it. Integrating the continuous membrane gives an
+            # always-nonzero gradient so the classifier actually trains. The
+            # hidden layer still spikes (that is where the sparse-compute /
+            # energy benefit lives; see deploy.energy.spike_stats).
+            out_sum = out_sum + mem2
         return out_sum
