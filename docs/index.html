@@ -132,7 +132,7 @@
       <div class="label">SVEB sensitivity</div>
       <div class="val">0.13</div>
       <div class="target">target &ge; 0.45 &middot; pure DS1&rarr;DS2</div>
-      <span class="chip warn">0.24 with svdb-augmented training</span>
+      <span class="chip warn">0.27 with svdb-augmented training + T96</span>
     </div>
     <div class="tile">
       <div class="label">SynOps / beat</div>
@@ -239,6 +239,16 @@
 
   <h2>Experiment log</h2>
   <ul class="log">
+    <li>
+      <span class="date">2026-07-07</span>
+      <p class="what">Ran the RunPod sweep: four svdb-augmented configs (reference, +capacity h192, +time-resolution
+      T96, +input-detail thr 0.10) on the same DS2 test. More time resolution (T96) is the best lever, lifting DS2
+      SVEB sensitivity to 0.27 while keeping VEB sensitivity high (0.86) and actually lowering energy to ~13.7k
+      SynOps. More input detail (thr 0.10) edged SVEB to 0.27 too but collapsed VEB sensitivity to 0.70, a bad
+      trade; added capacity barely moved SVEB. Architecture levers give incremental SVEB gains (0.20&rarr;0.27);
+      the larger remaining lever is data. Now stacking a second supraventricular database (INCART) onto svdb with
+      the T96 winner to test whether more diverse SVEB training pushes DS2 past 0.27.</p>
+    </li>
     <li>
       <span class="date">2026-07-07</span>
       <p class="what">Augmented training with svdb (supraventricular-rich, added its beats to the MIT-BIH DS1 training
