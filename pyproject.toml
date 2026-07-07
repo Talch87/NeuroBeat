@@ -3,6 +3,11 @@ name = "neurocardio"
 version = "0.1.0"
 description = "SNN arrhythmia detector on single-lead ECG (Phase 1 PoC)"
 requires-python = ">=3.11"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
+classifiers = [
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+]
 dependencies = [
     "torch>=2.2",
     "snntorch>=0.9",

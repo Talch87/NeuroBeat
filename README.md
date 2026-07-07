@@ -8,6 +8,7 @@
   <img alt="tests" src="https://img.shields.io/badge/tests-60%20passing-2ea44f">
   <img alt="split" src="https://img.shields.io/badge/split-inter--patient%20(DS1%E2%86%92DS2)-0aa">
   <img alt="status" src="https://img.shields.io/badge/phase%201-proof%20of%20concept-f5a623">
+  <img alt="license" src="https://img.shields.io/badge/license-AGPL--3.0%20%2F%20commercial-blue">
 </p>
 
 <p align="center">
@@ -224,5 +225,11 @@ the time loop would help more than changing hardware.
   needed before any pilot.
 - Regulation: EU AI Act and MDR requirements change over time, so the technical
   documentation should be kept current.
+
+## License
+
+NeuroBeat is dual-licensed: **AGPL-3.0** for open-source use (see [`LICENSE`](LICENSE)), or a
+**commercial license** for proprietary/closed-source use. See [`LICENSING.md`](LICENSING.md) for
+details and how to obtain a commercial license. Copyright (C) 2026 Talch87.
 
 Phase 1 proof of concept. Built on public PhysioNet data. Metrics per AAMI EC57.
