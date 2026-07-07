@@ -113,46 +113,68 @@
   </section>
 
   <h2>Status board</h2>
+  <p class="muted" style="margin:-4px 0 12px">Val-locked, 5-seed, MIT-BIH DS2. Operating point fit only on a DS1
+  holdout and frozen. Values are the 5-seed mean.</p>
   <div class="grid">
     <div class="tile">
       <div class="label">VEB sensitivity</div>
-      <div class="val">0.90 reachable</div>
+      <div class="val">0.86</div>
       <div class="target">target &ge; 0.90</div>
-      <span class="chip ok">reachable</span>
+      <span class="chip warn">0.90 reachable, operating-point-limited</span>
     </div>
     <div class="tile">
-      <div class="label">VEB PPV @ 90% recall</div>
-      <div class="val">0.74</div>
+      <div class="label">VEB PPV</div>
+      <div class="val">0.66</div>
       <div class="target">target &ge; 0.50</div>
-      <span class="chip ok">achievable at budget size</span>
+      <span class="chip ok">met on every seed</span>
     </div>
     <div class="tile">
       <div class="label">SVEB sensitivity</div>
-      <div class="val">~0.45</div>
+      <div class="val">0.13</div>
       <div class="target">target &ge; 0.45</div>
-      <span class="chip warn">borderline</span>
+      <span class="chip bad">the blocker</span>
     </div>
     <div class="tile">
       <div class="label">SynOps / beat</div>
-      <div class="val">~24k</div>
+      <div class="val">14,273</div>
       <div class="target">target &le; 25,000</div>
-      <span class="chip warn">near budget, val-locking to confirm</span>
+      <span class="chip ok">met, well under budget</span>
     </div>
   </div>
 
   <div class="bottomline">
-    <p style="margin:0 0 6px"><strong>Bottom line.</strong> All four targets may be reachable at once. Discrimination
-    was never the real blocker (a wide layer with dense input hits about 0.68 VEB precision at 90% recall), and the
-    energy tension now looks solvable too.</p>
-    <p style="margin:0 0 6px">The key turned out to be time resolution. A budget-sized config (128 hidden units,
-    sparse input, but 64 timesteps) reached about 0.74 VEB precision at 90% recall. More timesteps sharpen
-    discrimination while adding almost nothing to SynOps, so they substitute for the expensive levers (a wide layer
-    and dense low-threshold spikes). This config's layer-1 cost is about 20,000 SynOps, leaving room under the
-    25,000 budget for the rest.</p>
-    <p style="margin:0">A val-locked 5-seed evaluation of this config is running now to confirm the exact SynOps and
-    the DS2 sensitivity and PPV under the no-test-tuning protocol. If those hold, the goal is met. The frontier below
-    shows how discrimination and energy trade off.</p>
+    <p style="margin:0 0 6px"><strong>Bottom line.</strong> Two of the four targets are met and stable across seeds:
+    VEB precision (0.66) and energy (about 14,300 SynOps, well under the 25,000 budget). The VEB detector also
+    generalizes across databases (see below). So the discrimination-vs-energy problem that dominated earlier is
+    solved.</p>
+    <p style="margin:0 0 6px">VEB sensitivity averages 0.86 over five seeds. It reaches the 0.90 target (one seed hit
+    0.909, and the precision-recall curve supports 90% recall at good precision), but the frozen operating point does
+    not deliver it reliably, partly because it is compromised trying to chase an SVEB target it cannot reach.</p>
+    <p style="margin:0">The real blocker is SVEB sensitivity: 0.13 on DS2, far below 0.45. Supraventricular beats look
+    almost normal on a single lead, and DS1 has few of them. Notably, the same model reaches much higher SVEB
+    sensitivity on other databases (0.62 on INCART), so the capacity exists; this looks like a training-data problem,
+    not a hard ceiling. Next step is augmenting training with supraventricular-rich data.</p>
   </div>
+
+  <h3>Cross-database generalization (same model, frozen operating point)</h3>
+  <p class="muted">Trained on MIT-BIH DS1, operating point frozen on the DS1 holdout, then applied unchanged to two
+  entirely different databases. 5-seed mean. This is a stricter test than DS1 to DS2 alone.</p>
+  <div class="card scroll" style="padding:6px 8px">
+    <table>
+      <thead>
+        <tr><th>Database</th><th class="mono">Beats</th><th>VEB sens</th><th>VEB PPV</th><th>SVEB sens</th><th>SVEB PPV</th></tr>
+      </thead>
+      <tbody>
+        <tr class="snn"><td>MIT-BIH DS2 (held-out)</td><td class="mono">49,693</td><td>0.86</td><td>0.66</td><td>0.13</td><td>&mdash;</td></tr>
+        <tr><td>svdb (supraventricular-rich, 128 Hz)</td><td class="mono">184,520</td><td>0.84</td><td>0.44</td><td>0.36</td><td>0.52</td></tr>
+        <tr><td>INCART (12-lead, 257 Hz)</td><td class="mono">175,811</td><td>0.83</td><td>0.84</td><td>0.62</td><td>0.27</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted" style="margin-top:8px">VEB sensitivity holds near 0.83&ndash;0.86 across all three databases,
+  different patients, leads, and sampling rates, which is strong generalization for the solved part of the problem.
+  SVEB sensitivity is low on DS2 but rises to 0.36 and 0.62 on the external sets, evidence that SVEB is addressable
+  with more of the right training data rather than blocked by the architecture.</p>
 
   <h3>Frontier: discrimination vs energy (DS2 feasibility reads)</h3>
   <div class="card scroll" style="padding:6px 8px">
@@ -161,7 +183,7 @@
         <tr><th>Config</th><th>VEB PPV @ 90% recall</th><th class="mono">Est. SynOps/beat</th><th>Budget</th></tr>
       </thead>
       <tbody>
-        <tr class="snn"><td>h128, 64 steps, 2 channels (thr 0.12)</td><td>0.739</td><td class="mono">~20-25k</td><td>at budget (val-locking)</td></tr>
+        <tr class="snn"><td>h128, 64 steps, 2 channels (thr 0.12)</td><td>0.739</td><td class="mono">14,273</td><td>val-locked, under</td></tr>
         <tr><td>h256, 64 steps, all channels, dense</td><td>0.68</td><td class="mono">~108,000</td><td>4.3x over</td></tr>
         <tr><td>h96, 32 steps, all channels (thr 0.12)</td><td>0.571</td><td class="mono">~28,500</td><td>1.14x over</td></tr>
         <tr><td>h128, 32 steps, 2 channels (thr 0.12)</td><td>0.263</td><td class="mono">~23,000</td><td>under, but weak</td></tr>
@@ -170,8 +192,8 @@
     </table>
   </div>
   <p class="muted" style="margin-top:8px">Time resolution is a strong, cheap lever: the same 2-channel shape scores
-  0.26 at 32 timesteps but 0.74 at 64 timesteps, for almost no extra SynOps. Numbers are precision-recall
-  reachability reads on DS2, not val-locked operating points; the top row is being val-locked now.</p>
+  0.26 at 32 timesteps but 0.74 at 64 timesteps, for almost no extra SynOps. The top row is now val-locked at 14,273
+  SynOps per beat, well under budget. Other rows are precision-recall reachability reads on DS2.</p>
 
   <h2>Phase 1 baseline (committed)</h2>
   <p class="muted">MIT-BIH, inter-patient DS1&rarr;DS2. DS1 train = 51,000 beats, DS2 test = 49,693 beats.
@@ -217,9 +239,11 @@
   <ul class="log">
     <li>
       <span class="date">2026-07-07</span>
-      <p class="what">Added cross-database validation: downloaders and a resampling loader for the MIT-BIH
-      Supraventricular (svdb, 128 Hz) and St. Petersburg INCART (257 Hz) databases, so a model trained on MIT-BIH can
-      be tested on entirely different patients and recording equipment. Both datasets downloaded.</p>
+      <p class="what">Val-locked the budget-sized config across 5 seeds on DS2 and applied the same frozen operating
+      point to svdb and INCART. Result: VEB PPV (0.66) and SynOps (14,273) are met and stable; VEB sensitivity
+      averages 0.86 (reaches 0.90 but not on every seed); SVEB sensitivity (0.13) is the remaining blocker. The VEB
+      detector generalizes across all three databases (sensitivity 0.83 to 0.86), and SVEB sensitivity is much higher
+      on the external sets (up to 0.62 on INCART), pointing to a training-data fix rather than an architecture limit.</p>
     </li>
     <li>
       <span class="date">2026-07-07</span>
