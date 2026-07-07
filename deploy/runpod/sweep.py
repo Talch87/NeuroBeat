@@ -26,13 +26,18 @@ OUT = Path("runs/runpod_sweep.json")
 
 # --- edit this grid: one dict per training job --------------------------------
 GRID = [
+    # SVEB-push sweep (all svdb-augmented). Levers for the hard N-vs-SVEB boundary:
     {"threshold": 0.12, "n_timesteps": 64, "orders": [0, 1], "hidden": 128,
-     "scheme": "sqrt", "lr": 0.004, "epochs": 100},
-    # {"threshold": 0.10, "n_timesteps": 64, "orders": [0, 1], "hidden": 128, ...},
-    # add more configs to sweep here ...
+     "scheme": "sqrt", "lr": 0.004, "epochs": 100},   # F4 reference
+    {"threshold": 0.12, "n_timesteps": 64, "orders": [0, 1], "hidden": 192,
+     "scheme": "sqrt", "lr": 0.004, "epochs": 100},   # more capacity (~21k SynOps)
+    {"threshold": 0.12, "n_timesteps": 96, "orders": [0, 1], "hidden": 128,
+     "scheme": "sqrt", "lr": 0.004, "epochs": 100},   # more time resolution
+    {"threshold": 0.10, "n_timesteps": 64, "orders": [0, 1], "hidden": 128,
+     "scheme": "sqrt", "lr": 0.004, "epochs": 100},   # more input detail
 ]
-# options applied to every job (add "external":"incart:data/incartdb:1" if INCART is baked in)
-COMMON = {"seeds": 5, "augment": "svdb:data/svdb:0", "augment_n_cap": 20000}
+# options applied to every job (INCART not baked into the image, so external is empty)
+COMMON = {"seeds": 3, "augment": "svdb:data/svdb:0", "augment_n_cap": 20000}
 TERMINAL = {"COMPLETED", "FAILED", "CANCELLED", "TIMED_OUT"}
 # ------------------------------------------------------------------------------
 
