@@ -37,7 +37,8 @@ class TrainConfig:
     batch_size: int = 128
     lr: float = 1e-3
     seed: int = 1337
-    device: str = "cpu"
+    device: str = "cpu"  # "cpu" | "cuda" | "auto"
+    class_weight: str = "none"  # "none" | "balanced"
 
 
 @dataclass

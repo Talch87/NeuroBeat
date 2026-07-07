@@ -21,4 +21,5 @@ train:
   batch_size: 128
   lr: 0.001
   seed: 1337
-  device: cpu
+  device: auto
+  class_weight: balanced

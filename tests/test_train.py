@@ -4,7 +4,12 @@ from torch.utils.data import DataLoader
 
 from neurocardio.data.dataset import ECGBeatDataset
 from neurocardio.models.baselines import CNN1D
-from neurocardio.train.loop import set_seed, train
+from neurocardio.train.loop import (
+    class_weights_from_labels,
+    resolve_device,
+    set_seed,
+    train,
+)
 
 
 def test_set_seed_is_reproducible():
@@ -13,6 +18,26 @@ def test_set_seed_is_reproducible():
     set_seed(123)
     b = torch.rand(5)
     assert torch.allclose(a, b)
+
+
+def test_resolve_device_degrades_to_cpu_when_no_cuda():
+    # "cpu" is always literal; "auto"/"cuda" resolve to cuda only if available.
+    assert resolve_device("cpu") == "cpu"
+    expected = "cuda" if torch.cuda.is_available() else "cpu"
+    assert resolve_device("auto") == expected
+    assert resolve_device("cuda") == expected
+
+
+def test_class_weights_inverse_frequency():
+    # 90 of class 0, 10 of class 1, 0 of class 2 -> rarer class gets more weight,
+    # absent class gets 0.
+    labels = np.array([0] * 90 + [1] * 10)
+    w = class_weights_from_labels(labels, n_classes=3)
+    assert len(w) == 3
+    assert w[1] > w[0] > 0.0
+    assert w[2] == 0.0
+    # inverse-frequency: weight ratio equals inverse count ratio (90/10 = 9)
+    assert abs(w[1] / w[0] - 9.0) < 1e-9
 
 
 def test_overfits_tiny_batch():

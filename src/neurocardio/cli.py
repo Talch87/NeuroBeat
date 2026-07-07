@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
@@ -12,7 +13,12 @@ from neurocardio.encoding.delta import delta_encode
 from neurocardio.eval.evaluate import evaluate
 from neurocardio.models.baselines import CNN1D, LSTMClassifier
 from neurocardio.models.snn import SNNClassifier
-from neurocardio.train.loop import set_seed, train
+from neurocardio.train.loop import (
+    class_weights_from_labels,
+    resolve_device,
+    set_seed,
+    train,
+)
 
 
 def _make_model(cfg):
@@ -51,33 +57,42 @@ def cmd_download(args):
 def cmd_train(args):
     cfg = load_config(args.config)
     set_seed(cfg.train.seed)
+    device = resolve_device(cfg.train.device)
     train_ds = _make_dataset(cfg, get_split("train"))
     test_ds = _make_dataset(cfg, get_split("test"))
     train_loader = DataLoader(train_ds, batch_size=cfg.train.batch_size, shuffle=True)
     test_loader = DataLoader(test_ds, batch_size=cfg.train.batch_size)
     model = _make_model(cfg)
+    class_weights = None
+    if cfg.train.class_weight == "balanced":
+        class_weights = class_weights_from_labels(train_ds.labels, cfg.model.n_classes)
+    print(f"device={device}  class_weight={cfg.train.class_weight}  batch={cfg.train.batch_size}")
     train(
         model,
         train_loader,
         test_loader,
         epochs=cfg.train.epochs,
         lr=cfg.train.lr,
-        device=cfg.train.device,
+        device=device,
+        class_weights=class_weights,
     )
-    result = evaluate(model, test_loader, classes=AAMI_CLASSES, device=cfg.train.device)
+    result = evaluate(model, test_loader, classes=AAMI_CLASSES, device=device)
     print("Inter-patient (DS2) metrics:", result["metrics"])
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), args.out)
 
 
 def cmd_evaluate(args):
     cfg = load_config(args.config)
+    device = resolve_device(cfg.train.device)
     test_ds = _make_dataset(cfg, get_split("test"))
     loader = DataLoader(test_ds, batch_size=cfg.train.batch_size)
     model = _make_model(cfg)
-    model.load_state_dict(torch.load(args.weights))
-    result = evaluate(model, loader, classes=AAMI_CLASSES)
+    model.load_state_dict(torch.load(args.weights, map_location=device))
+    result = evaluate(model, loader, classes=AAMI_CLASSES, device=device)
     print(result["metrics"])
     if cfg.model.kind == "snn":
+        model.to("cpu")  # energy proxy is a device-agnostic count
         print("Energy proxy:", spike_stats(model, next(iter(loader))[0][:1]))
 
 

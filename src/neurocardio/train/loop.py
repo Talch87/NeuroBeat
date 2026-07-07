@@ -11,6 +11,25 @@ def set_seed(seed: int) -> None:
     torch.manual_seed(seed)
 
 
+def resolve_device(device: str) -> str:
+    """Resolve 'auto'/'cuda'/'cpu' to a concrete device string, degrading to
+    'cpu' when CUDA is unavailable so configs stay portable across machines."""
+    if device in ("auto", "cuda"):
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    return device
+
+
+def class_weights_from_labels(labels, n_classes: int) -> list[float]:
+    """Inverse-frequency class weights for CrossEntropyLoss. Classes absent from
+    `labels` get weight 0. Normalized so weights average ~1 over present classes."""
+    counts = np.bincount(np.asarray(labels), minlength=n_classes).astype(np.float64)
+    total = counts.sum()
+    weights = np.zeros(n_classes, dtype=np.float64)
+    present = counts > 0
+    weights[present] = total / (n_classes * counts[present])
+    return weights.tolist()
+
+
 def _accuracy(model, loader, device) -> float:
     model.eval()
     correct = total = 0

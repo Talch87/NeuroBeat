@@ -17,8 +17,9 @@ model:
   beta: 0.9
   n_classes: 5
 train:
-  epochs: 20
-  batch_size: 128
-  lr: 0.001
+  epochs: 30
+  batch_size: 1024      # large batch feeds the GPU (SNN is launch-latency bound)
+  lr: 0.003             # scaled up for the larger batch
   seed: 1337
-  device: cpu
+  device: auto          # cuda if available, else cpu
+  class_weight: balanced
