@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeuroBeat — Results</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1b1f24; --muted: #59636e; --line: #d7dee4;
+    --card: #f7f9fb; --accent: #e0245e; --accent-soft: #fdeaf0;
+    --ok: #1a7f37; --ok-bg: #e6f4ea; --warn: #9a6700; --warn-bg: #fdf3d6;
+    --bad: #b3261e; --bad-bg: #fce8e6; --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --line: #2a313a;
+      --card: #161b22; --accent: #ff5c8a; --accent-soft: #24141b;
+      --ok: #3fb950; --ok-bg: #12261a; --warn: #d29922; --warn-bg: #2a2110;
+      --bad: #f85149; --bad-bg: #2a1513;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --fg: #1b1f24; --muted: #59636e; --line: #d7dee4;
+    --card: #f7f9fb; --accent: #e0245e; --accent-soft: #fdeaf0;
+    --ok: #1a7f37; --ok-bg: #e6f4ea; --warn: #9a6700; --warn-bg: #fdf3d6;
+    --bad: #b3261e; --bad-bg: #fce8e6;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --line: #2a313a;
+    --card: #161b22; --accent: #ff5c8a; --accent-soft: #24141b;
+    --ok: #3fb950; --ok-bg: #12261a; --warn: #d29922; --warn-bg: #2a2110;
+    --bad: #f85149; --bad-bg: #2a1513;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6; font-size: 16px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 64px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 28px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand svg { flex: none; }
+  h1 { font-size: 1.7rem; margin: 0; letter-spacing: -0.01em; }
+  .tagline { color: var(--muted); margin: 6px 0 0; font-size: 0.98rem; }
+  .nav { margin-top: 14px; font-size: 0.9rem; }
+  .nav a { margin-right: 16px; }
+  h2 { font-size: 1.2rem; margin: 36px 0 12px; letter-spacing: -0.01em; }
+  h3 { font-size: 1rem; margin: 22px 0 8px; }
+  p { margin: 0 0 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+  .objective { font-size: 1.02rem; }
+  .objective strong { color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 16px 0; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .tile .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .tile .val { font-family: var(--mono); font-size: 1.5rem; margin: 6px 0 2px; }
+  .tile .target { font-size: 0.82rem; color: var(--muted); }
+  .chip { display: inline-block; font-size: 0.74rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; margin-top: 8px; }
+  .chip.ok { background: var(--ok-bg); color: var(--ok); }
+  .chip.warn { background: var(--warn-bg); color: var(--warn); }
+  .chip.bad { background: var(--bad-bg); color: var(--bad); }
+  .bottomline { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .bottomline strong { color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  .scroll { overflow-x: auto; }
+  th, td { text-align: right; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { color: var(--muted); font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  tbody tr.snn td { font-weight: 600; }
+  td.mono, th.mono { font-family: var(--mono); }
+  .log { list-style: none; padding: 0; margin: 0; }
+  .log li { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .log li:last-child { border-bottom: none; }
+  .log .date { font-family: var(--mono); font-size: 0.82rem; color: var(--muted); flex: none; width: 92px; padding-top: 1px; }
+  .log .what { margin: 0; }
+  .muted { color: var(--muted); }
+  footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.86rem; }
+  code { font-family: var(--mono); font-size: 0.88em; background: var(--card); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <rect x="1" y="1" width="38" height="38" rx="9" stroke="var(--accent)" stroke-width="2"/>
+        <path d="M5 20 h7 l3 -11 l5 22 l3 -14 l2 3 h10" stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>NeuroBeat — Results</h1>
+        <p class="tagline">Live experimental status for the spiking neural network ECG arrhythmia detector.</p>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="https://github.com/Talch87/NeuroBeat">Repository</a>
+      <a href="https://github.com/Talch87/NeuroBeat#readme">README</a>
+      <a href="https://physionet.org/content/mitdb/">MIT-BIH data</a>
+    </nav>
+  </header>
+
+  <section>
+    <div class="card objective">
+      <p style="margin:0 0 6px"><strong>Current objective</strong></p>
+      <p style="margin:0">Find a low-timestep SNN configuration that reaches <strong>VEB sensitivity &ge; 0.90</strong>,
+      <strong>VEB PPV &ge; 0.50</strong>, <strong>SVEB sensitivity &ge; 0.45</strong>, and
+      <strong>&le; 25,000 SynOps per beat</strong> on the inter-patient MIT-BIH DS1&rarr;DS2 split,
+      stable across at least 5 random seeds.</p>
+    </div>
+  </section>
+
+  <h2>Status board</h2>
+  <div class="grid">
+    <div class="tile">
+      <div class="label">VEB sensitivity</div>
+      <div class="val">0.90 reachable</div>
+      <div class="target">target &ge; 0.90</div>
+      <span class="chip warn">reachable, but with a PPV cost</span>
+    </div>
+    <div class="tile">
+      <div class="label">VEB PPV @ 90% recall</div>
+      <div class="val">~0.32</div>
+      <div class="target">target &ge; 0.50</div>
+      <span class="chip bad">below target (binding constraint)</span>
+    </div>
+    <div class="tile">
+      <div class="label">SVEB sensitivity</div>
+      <div class="val">~0.41</div>
+      <div class="target">target &ge; 0.45</div>
+      <span class="chip warn">borderline</span>
+    </div>
+    <div class="tile">
+      <div class="label">SynOps / beat</div>
+      <div class="val">&lt; 25k (est.)</div>
+      <div class="target">target &le; 25,000</div>
+      <span class="chip warn">on track, exact value pending</span>
+    </div>
+  </div>
+
+  <div class="bottomline">
+    <p style="margin:0 0 6px"><strong>Bottom line.</strong> The binding constraint is VEB positive predictivity (PPV)
+    at 90% sensitivity. The two-layer spiking network's discrimination plateaus around 0.32 precision at that recall,
+    below the 0.50 target.</p>
+    <p style="margin:0">Adding RR-interval timing features roughly doubled it (from about 0.15 to 0.32), which confirms
+    the direction is right but not yet sufficient. Reaching 0.50 likely needs a spiking-convolutional front end, which
+    would raise SynOps above the 25k budget. A maximum-capacity ceiling test and a val-locked 5-seed evaluation are
+    running now to confirm this and produce final honest numbers.</p>
+  </div>
+
+  <h2>Phase 1 baseline (committed)</h2>
+  <p class="muted">MIT-BIH, inter-patient DS1&rarr;DS2. DS1 train = 51,000 beats, DS2 test = 49,693 beats.
+  Inverse-frequency class weighting. Metrics per AAMI EC57.</p>
+  <div class="card scroll" style="padding:6px 8px">
+    <table>
+      <thead>
+        <tr><th>Model</th><th class="mono">Params</th><th>VEB Sens</th><th>VEB PPV</th><th>SVEB Sens</th><th>SVEB PPV</th><th>Acc</th><th class="mono">SynOps/beat</th></tr>
+      </thead>
+      <tbody>
+        <tr class="snn"><td>SNN (delta)</td><td class="mono">1,029</td><td>0.808</td><td>0.320</td><td>0.407</td><td>0.064</td><td>0.629</td><td class="mono">33,277</td></tr>
+        <tr><td>CNN1D</td><td class="mono">2,885</td><td>0.835</td><td>0.770</td><td>0.569</td><td>0.093</td><td>0.684</td><td class="mono">n/a</td></tr>
+        <tr><td>LSTM</td><td class="mono">17,477</td><td>0.626</td><td>0.160</td><td>0.020</td><td>0.015</td><td>0.567</td><td class="mono">n/a</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted" style="margin-top:10px">The SNN reaches VEB sensitivity close to the CNN with about a third of the
+  parameters, but at lower VEB PPV. The gap in PPV between the SNN and the CNN is the discrimination problem the current
+  objective targets. The CNN uses roughly 355k multiply-accumulates per beat, which is why it separates VEB from normal
+  beats better and why matching it inside a 25k SynOps budget is hard.</p>
+
+  <h2>Active investigation</h2>
+  <p>Two changes from recent literature are being tested to raise VEB discrimination while lowering compute:</p>
+  <h3>1. Low-timestep count-pooled encoder</h3>
+  <p>The delta-encoded spikes are pooled into a small number of time bins (for example 32 instead of 256). This cuts
+  the SNN's sequential loop length, which both speeds up training by about 16x and lowers SynOps per beat, helping the
+  25k budget.</p>
+  <h3>2. RR-interval timing features</h3>
+  <p>Three patient-normalized timing ratios (pre-RR, post-RR, and their ratio, each divided by the record's median RR)
+  are fed into the hidden layer. Premature beats have a short pre-RR, which is a cue that beat shape alone does not
+  carry. This roughly doubled VEB precision at 90% recall on DS2, from about 0.15 to about 0.32.</p>
+  <p class="muted">These are feasibility reads from a precision-recall reachability diagnostic, not final operating
+  points. Final numbers use the val-locked protocol below and will replace the status board values when the runs
+  finish.</p>
+
+  <h2>Experiment log</h2>
+  <ul class="log">
+    <li>
+      <span class="date">2026-07-07</span>
+      <p class="what">Running the maximum-capacity ceiling test (T64, hidden 256, high resolution) and the
+      val-locked 5-seed evaluation with RR features. These confirm whether the ~0.32 VEB PPV ceiling is real and
+      produce the final honest DS2 numbers.</p>
+    </li>
+    <li>
+      <span class="date">2026-07-06</span>
+      <p class="what">Added RR-interval timing features and an RR-aware SNN input path. VEB precision at 90% recall
+      improved from about 0.15 to about 0.32 on DS2. More training epochs did not help and slightly hurt, which points
+      to a discrimination ceiling rather than an optimization problem.</p>
+    </li>
+    <li>
+      <span class="date">2026-07-06</span>
+      <p class="what">Added the low-timestep count-pooled encoder with derivative channels. About 16x faster training
+      and lower SynOps per beat.</p>
+    </li>
+    <li>
+      <span class="date">Phase 1</span>
+      <p class="what">Established the inter-patient baseline: 1,029-parameter SNN at 0.808 VEB sensitivity on unseen
+      patients, an energy proxy (SynOps), and a streaming R-peak detector. See the committed table above.</p>
+    </li>
+  </ul>
+
+  <h2>How the numbers are kept honest</h2>
+  <div class="card">
+    <p style="margin:0 0 10px"><strong>Inter-patient split.</strong> The model trains on DS1 patients and is tested on
+    DS2 patients (the de Chazal split). Beats from a test patient never appear in training, so the numbers reflect new
+    patients, not memorized ones.</p>
+    <p style="margin:0 0 10px"><strong>No test-set tuning.</strong> The operating point (per-class decision thresholds)
+    is chosen only on a validation holdout carved out of DS1, then frozen before touching DS2. The test set selects
+    nothing. This is why the reported PPV is lower than tuned numbers seen in some papers, and why it is trustworthy.</p>
+    <p style="margin:0"><strong>Per-class metrics.</strong> About 89% of beats are normal, so overall accuracy is easy
+    to inflate. Sensitivity and PPV are reported per class for VEB and SVEB, which is what actually matters for
+    detecting arrhythmias.</p>
+  </div>
+
+  <footer>
+    <p>Last updated: July 7, 2026. Phase 1 software proof of concept. Built on public
+    <a href="https://physionet.org/content/mitdb/">PhysioNet MIT-BIH</a> data. Metrics per AAMI EC57.
+    This page is generated from the repository and updated as experiments complete.</p>
+  </footer>
+
+</div>
+</body>
+</html>

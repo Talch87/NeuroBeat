@@ -5,9 +5,14 @@
 <p align="center">
   <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-3776ab">
   <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-2.11%20(CUDA)-ee4c2c">
-  <img alt="tests" src="https://img.shields.io/badge/tests-44%20passing-2ea44f">
+  <img alt="tests" src="https://img.shields.io/badge/tests-52%20passing-2ea44f">
   <img alt="split" src="https://img.shields.io/badge/split-inter--patient%20(DS1%E2%86%92DS2)-0aa">
   <img alt="status" src="https://img.shields.io/badge/phase%201-proof%20of%20concept-f5a623">
+</p>
+
+<p align="center">
+  <b><a href="https://talch87.github.io/NeuroBeat/">Live results dashboard</a></b> &middot;
+  current experiments and honest inter-patient numbers, updated as runs complete.
 </p>
 
 NeuroBeat is a spiking neural network (SNN) that classifies single-lead ECG heartbeats
@@ -109,10 +114,23 @@ Notes on the results:
 - Overall accuracy is low on purpose. The models are not optimized for it, since per-class
   sensitivity is the more useful metric here.
 
-A hyperparameter sweep (delta threshold and class-weight scheme, see
-[`experiments/sweep_snn.py`](experiments/sweep_snn.py)) is testing whether a configuration
-can reach the Phase 2 target of VEB sensitivity >= 0.90. Results are written to
-`runs/sweep_results.json`.
+### Current work: raising VEB precision honestly
+
+The open question is whether a small SNN can reach VEB sensitivity >= 0.90 and VEB PPV >= 0.50
+at the same time, on the inter-patient split, within a 25,000 SynOps per beat budget. Two
+changes are being tested:
+
+- A low-timestep count-pooled encoder ([`encoding/beat.py`](src/neurocardio/encoding/beat.py))
+  that pools spikes into fewer time bins. It trains about 16x faster and lowers SynOps per beat.
+- RR-interval timing features (patient-normalized pre-RR and post-RR ratios) fed into the
+  hidden layer. Premature beats have a short pre-RR, a cue that beat shape alone does not carry.
+  This roughly doubled VEB precision at 90% recall on DS2, from about 0.15 to about 0.32.
+
+Operating points are chosen only on a validation holdout carved out of DS1 and then frozen
+before touching DS2 (see [`experiments/lock_snn_rr.py`](experiments/lock_snn_rr.py)), so the
+test set tunes nothing. The current best is still below the 0.50 VEB PPV target, which points
+to a discrimination ceiling for the two-layer network within the SynOps budget. Live status and
+the latest numbers are on the [results dashboard](https://talch87.github.io/NeuroBeat/).
 
 ## Roadmap
 
@@ -136,16 +154,20 @@ for neuromorphic hardware.
 
 ```
 src/neurocardio/
-  data/       load ECG, bandpass/normalize, R-peak beat windows, AAMI labels, DS1/DS2 split
-  encoding/   delta.py  (level-crossing spike encoder), rate.py (rate-coding baseline)
-  models/     snn.py    (LIF spiking classifier), baselines.py (CNN1D, LSTM)
+  data/       load ECG, bandpass/normalize, R-peak beat windows, AAMI labels, DS1/DS2 split,
+              RR-interval timing features
+  encoding/   delta.py (level-crossing spike encoder), beat.py (low-timestep count-pooled
+              encoder with derivative channels), rate.py (rate-coding baseline)
+  models/     snn.py (LIF spiking classifier, optional RR input path), baselines.py (CNN1D, LSTM)
   train/      training loop, seeding, class weighting, device resolution
   eval/       confusion matrix, AAMI sensitivity/PPV, evaluate over a DataLoader
   deploy/     energy.py (SynOps + spike-count energy proxy)
   stream/     online R-peak detector and StreamDetector (timestamped anomaly logging)
   cli.py      download, train, evaluate
-experiments/  sweep_snn.py (GPU hyperparameter sweep)
-tests/        44 tests, one per module, hermetic (no network, small wfdb fixtures)
+experiments/  sweep_snn.py, search_snn.py (GPU sweeps), lock_snn.py / lock_snn_rr.py
+              (val-locked honest evaluation, no test-set tuning)
+docs/         index.html (results dashboard, served via GitHub Pages)
+tests/        52 tests, one per module, hermetic (no network, small wfdb fixtures)
 ```
 
 ## Setup
