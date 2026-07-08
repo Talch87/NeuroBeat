@@ -5,7 +5,7 @@ date: "July 2026"
 ---
 
 | Independent researcher
-| Contact: valerio@covenance.ai
+| Contact: valeriomerlini87@gmail.com
 | Code, weights, and live dashboard: github.com/Talch87/neuro-beat and talch87.github.io/neuro-beat
 
 ## Abstract
