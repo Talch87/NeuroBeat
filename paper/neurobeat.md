@@ -202,7 +202,7 @@ minorities are the quantities that matter for the class-weighted objective.)*
 
 ## 4. Figures
 
-Figures 1 to 6 are rendered from the locked results and included below (sources in
+Figures 1 to 7 are rendered from the locked results and included below (sources in
 `paper/figures/`). All figures are external image files; none is embedded as
 inline base64 data.
 
@@ -258,6 +258,13 @@ scale). Dashed lines mark the 0.90 sensitivity and 0.60 PPV targets. Only record
 with at least one VEB beat are shown. *Message: sensitivity is high and stable on
 the high-VEB records except record 213; PPV is dispersed and falls well below target
 on several low-VEB records.*
+
+![Figure 7](figures/fig7_learningcurve.png)
+
+**Figure 7 (learning curve).** DS2 VEB F1 (mean with min-max band), sensitivity, and
+PPV versus DS1 training beats for the single-stage model (T = 64, 2 seeds per point).
+*Message: sensitivity is flat and the F1 mean saturates by about a quarter of DS1;
+additional data mainly narrows seed variance rather than raising accuracy.*
 
 ---
 
@@ -841,6 +848,35 @@ performance: paired with a competent detector the annotation-conditional headlin
 degrades gracefully, but a weak detector is catastrophic, so detector choice cannot be
 treated as an afterthought.
 
+### 7.11 Sensitivity to training-set size
+
+To test whether the VEB result is limited by training-set size, we retrained the
+single-stage model (T = 64, the paper configuration) on stratified 10%, 25%, 50%, and
+100% of DS1-train, fitting the sens-first operating point on DS1-val and reporting
+frozen DS2 VEB detection (2 seeds per point; Table 15, Figure 7). The data subset at a
+given fraction is fixed, so only the training-set size varies.
+
+**Table 15. DS2 VEB detection versus DS1 training-set size (single-stage, T = 64,
+sens-first, 2 seeds; mean, with F1 min-max band).**
+
+| DS1 train used | Train beats | VEB beats | DS2 sens | DS2 PPV | DS2 F1 [min, max] |
+|---|---:|---:|---:|---:|---:|
+| 10% | 4,458 | 291 | 0.920 | 0.425 | 0.563 [0.431, 0.695] |
+| 25% | 11,144 | 727 | 0.850 | 0.544 | 0.659 [0.569, 0.748] |
+| 50% | 22,287 | 1,454 | 0.897 | 0.494 | 0.627 [0.563, 0.692] |
+| 100% | 44,573 | 2,907 | 0.926 | 0.526 | 0.670 [0.648, 0.693] |
+
+The curve is essentially flat. VEB sensitivity shows no upward trend across the range
+(0.85 to 0.93), so even a tenth of DS1 (291 VEB beats) reaches the sensitivity the full
+set reaches; the mean F1 rises from 10% to 25% of the data and then plateaus (0.659 at
+25% versus 0.670 at 100%). What more data buys is not a higher mean but lower variance:
+the F1 min-max band narrows from [0.431, 0.695] at 10% to [0.648, 0.693] at 100%,
+consistent with the calibration-variance account of Sections 7.1 and 8. The
+single-stage VEB result is therefore saturated with respect to DS1 training-set size:
+more same-distribution MIT-BIH data would stabilize the operating point but is unlikely
+to raise accuracy, which points back to architecture, encoding, and single-lead
+information (Section 7.8) as the operative limits, not sample count.
+
 ---
 
 ## 8. Discussion
@@ -915,7 +951,10 @@ count, and it is the interval we treat as the honest uncertainty.
   device recordings is untested.
 - **Small validation holdout.** Three DS1 records make single-model operating
   points noisy; the ensemble mitigates but does not remove this. A larger or
-  cross-validated holdout is likely to tighten calibration.
+  cross-validated holdout is likely to tighten calibration. A training-set-size
+  ablation (Section 7.11) shows that more training data narrows seed variance but does
+  not raise DS2 accuracy, so this noise is a holdout-size and calibration effect rather
+  than a training-data-volume effect.
 - **Detection depends on the R-peak stage.** The headline numbers use provided
   annotations. An end-to-end ablation (Section 7.10) shows that swapping in a standard
   detector (XQRS) lowers VEB sensitivity/PPV modestly to 0.884 / 0.593, but a weak
@@ -1001,8 +1040,9 @@ scrutinize them.
   trees, SVM, and the paired bootstrap of Table 12), `experiments/quantized_cnn.py`
   (int8 CNN), `experiments/stats_ci.py` (bootstrap confidence intervals),
   `experiments/error_analysis.py` (per-record Table 6, confusion Tables 7 and 8, and
-  paired bootstrap Table 9), and `experiments/end2end_rpeak.py` (detected-R-peak
-  end-to-end ablation, Table 14).
+  paired bootstrap Table 9), `experiments/end2end_rpeak.py` (detected-R-peak
+  end-to-end ablation, Table 14), and `experiments/learning_curve.py` (training-set
+  size ablation, Table 15 and Figure 7).
 - All experiments use 5 seeds with the operating point fit on DS1 validation only;
   every table in this paper is regenerable from the released cache.
 
