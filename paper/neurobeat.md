@@ -130,8 +130,9 @@ resource-constrained deployment through quantized and compact convolutional or
 temporal-convolutional models, pruning, and microcontroller implementations. These
 approaches report MACs, memory footprint, or measured microcontroller energy.
 They are the natural non-spiking comparison point for efficiency claims; we include
-convolutional and recurrent baselines here (Section 7.8) and note quantized CNN and
-temporal-convolutional baselines as needed additional comparisons (Section 9).
+convolutional, recurrent, temporal-convolutional, residual-CNN, gradient-boosted-tree,
+and SVM baselines, plus a weight-only int8 CNN, under the identical protocol
+(Section 7.8).
 
 **(c) Spiking and neuromorphic ECG.** SNN-ECG methods report competitive MIT-BIH
 accuracy using delta-modulation encoding of the ECG and its derivatives
@@ -642,11 +643,10 @@ by a wide margin. Against the full five-seed ensemble that runs on every beat, t
 cascade is statistically indistinguishable in F1 (the interval includes zero) while
 using roughly a third of the operations (Section 7.7); the gating therefore buys the
 energy reduction at no measurable accuracy cost, which is the paper's central
-efficiency claim. We did not run a matched paired test against the CNN and LSTM
-baselines, which were trained for the operation-count comparison rather than saved
-for per-beat paired analysis; a paired patient-level comparison of the cascade
-against a fully quantized CNN under one frozen operating point is the comparison we
-recommend before a journal submission (Section 9). We report no p-values: at 22
+efficiency claim. We run the same paired test against the non-spiking baselines in
+Section 7.8 (Table 12); to preview the honest outcome, the cascade is ahead of the
+CNN and linear SVM but behind the TCN, ResNet-lite, and gradient-boosted-tree
+baselines on DS2 F1, which we report rather than obscure. We give no p-values: at 22
 patients the bootstrap interval and the fraction of resamples favouring each system
 are the summaries we consider defensible.
 
@@ -695,11 +695,9 @@ property of single-lead VEB detection rather than of spiking networks. Second, o
 operation count the SNN is far lower: 14k to 23k SynOps versus 356k (CNN) and 4.26M
 (LSTM) MACs. We state this carefully. A SynOp (a spike-triggered accumulate) and a
 MAC (a multiply-accumulate) are not the same unit, and this comparison is an
-operation-count advantage under a proxy model, not a measured energy ratio. The
-comparison would be strengthened by quantized CNN and temporal-convolutional
-baselines and by measured microcontroller energy (Section 9). Within these caveats,
-the gated cascade also attains the highest PPV of any model at comparable
-sensitivity.
+operation-count advantage under a proxy model, not a measured energy ratio. We add
+stronger baselines below (Table 12); measured microcontroller energy remains the key
+missing piece (Section 9).
 
 Post-training int8 weight quantization of the CNN (per-tensor symmetric, weights
 only, activations left in float, 3 seeds) preserves DS2 VEB detection: fp32
@@ -712,17 +710,46 @@ without changing the operation count, and a full int8 pipeline (quantized
 activations, with calibration) plus measured board energy is the comparison we
 recommend for a camera-ready version (Section 9).
 
-**On baseline strength.** The CNN and LSTM here establish that the
-sensitivity/precision tradeoff is a property of the single-lead task and bound the
-operation-count gap, but they are not a complete embedded comparison, and we do not
-claim superiority over the strongest embedded ECG methods. A fuller comparison
-should add a small temporal convolutional network (TCN), a compact 1-D CNN or
-ResNet-lite, a classical morphology-plus-RR classifier (an SVM or gradient-boosted
-trees such as XGBoost), and a fully quantized int8 CNN with quantized activations
-and measured board energy. We report the weight-only int8 CNN above as a first step
-in that direction and mark the rest as future work (Section 9). Until those are in
-place, the efficiency result should be read as an operation-count advantage under the
-SynOps proxy, not as a demonstrated win over all embedded ECG baselines.
+**Stronger baselines, and an honest ranking.** To avoid overstating the spiking
+model, we add stronger baselines under the identical validation-locked protocol: a
+compact temporal convolutional network (TCN), a ResNet-lite 1-D CNN, gradient-boosted
+trees on morphology-plus-RR features, and a linear SVM (Table 12). Each neural model
+is frozen at the seed with the best validation VEB F1; the classical models use a
+fixed seed and a validation-locked VEB-vs-rest threshold. The "cascade minus model"
+column is the paired record-level bootstrap difference in DS2 VEB F1 (the same test
+as Section 7.6); a negative value means the baseline beats the cascade.
+
+**Table 12. Additional embedded baselines under the identical protocol (frozen single
+artifact). "Cascade minus model" is the paired record-level bootstrap difference in
+DS2 VEB F1; negative means the baseline is more accurate than the cascade.**
+
+| Model | DS2 VEB sens | DS2 VEB PPV | Operations/beat | Cascade minus model F1 [95% CI] |
+|---|---|---|---|---|
+| TCN | 0.939 | 0.729 | ~1.02M MACs | -0.088 [-0.251, +0.082] |
+| ResNet-lite | 0.910 | 0.761 | ~539k MACs | -0.089 [-0.188, +0.009] |
+| Gradient-boosted trees | 0.974 | 0.678 | ~200 trees (depth 4) | -0.060 [-0.146, +0.019] |
+| Linear SVM | 0.981 | 0.259 | 259 MACs | +0.314 [+0.163, +0.477] |
+
+The result is a useful corrective. Three of these baselines reach higher DS2 VEB F1
+than the gated cascade: the TCN (0.939 / 0.729), ResNet-lite (0.910 / 0.761), and
+gradient-boosted trees (0.974 / 0.678); the paired bootstrap puts the cascade ahead
+of them in only 14%, 3%, and 5% of record resamples, respectively. The cascade does
+clearly beat the higher-sensitivity, lower-precision models: the fp32 and int8 CNN
+(ahead in 98% and 97% of resamples) and the linear SVM (100%). We therefore do not
+claim the spiking cascade is the most accurate DS2 VEB detector; on accuracy alone, a
+gradient-boosted tree on morphology-plus-RR features and a compact TCN are both
+better. What separates the cascade is per-beat operation count: it runs at about
+23,000 SynOps/beat, roughly 20 to 45 times below the TCN and ResNet-lite MAC counts,
+while the tree and SVM models are non-spiking and do not map onto neuromorphic
+hardware. Whether that operation-count gap translates into an energy advantage
+depends on measured hardware energy, which we do not yet have (Section 9); this
+comparison is exactly why we treat measured energy, not the SynOps proxy, as the
+decisive missing experiment, and why we confine the spiking contribution to the
+operation-count and neuromorphic-suitability axis rather than to accuracy. (The
+gradient-boosted-tree and SVM baselines use a binary VEB-vs-rest operating point,
+a slightly more favourable mechanism than the five-class bias used for the neural and
+spiking models; the TCN and ResNet-lite, which also beat the cascade, use the
+identical five-class mechanism.)
 
 ### 7.9 Supraventricular beats: a single-lead negative result
 
@@ -734,9 +761,9 @@ about 0.27, all still low.
 
 We then trained a dedicated SVEB specialist (higher time resolution, SVDB and INCART
 added to training, an SVEB-first operating point, 5 seeds). It does not yield a
-usable detector (Table 12).
+usable detector (Table 13).
 
-**Table 12. SVEB specialist on DS2 (non-standard training: SVDB and INCART added to
+**Table 13. SVEB specialist on DS2 (non-standard training: SVDB and INCART added to
 training; see text). "Degraded" indicates the VEB class collapses at that regime.**
 
 | Seed regime | DS2 SVEB sens | DS2 SVEB PPV | DS2 VEB sens |
@@ -800,9 +827,13 @@ gating it behind a sparse screener delivers comparable accuracy within budget, a
 the paired bootstrap (Section 7.6) confirms the cascade matches the full ensemble in
 F1 at a fraction of the operations.
 
-**(e) VEB is promising; single-lead SVEB is not solved.** The VEB result is usable
-under a strict protocol and an energy budget. The SVEB result is a clean negative
-under the same protocol, and we present it as such.
+**(e) VEB is usable but not best-in-class on accuracy; single-lead SVEB is not
+solved.** The VEB result is usable under a strict protocol and an energy budget, but
+we do not claim it is the most accurate detector: under the identical protocol a
+compact TCN, a ResNet-lite CNN, and gradient-boosted trees reach higher DS2 F1
+(Section 7.8). The spiking model's case rests on per-beat operation count and
+neuromorphic suitability, pending measured energy, not on accuracy leadership. The
+SVEB result is a clean negative under the same protocol, and we present it as such.
 
 **Alternative explanations we cannot fully exclude.** The cross-database PPV
 differences could reflect annotation-convention differences between databases rather
@@ -910,9 +941,11 @@ scrutinize them.
 - **Protocol and analysis harnesses:** `experiments/freeze_veb_v1.py` (single-stage;
   `--refit-only` re-tunes the operating point from cache),
   `experiments/gated_ensemble_veb.py` (cascade), `experiments/baselines_veb.py`
-  (CNN/LSTM), `experiments/quantized_cnn.py` (int8 CNN), `experiments/stats_ci.py`
-  (bootstrap confidence intervals), and `experiments/error_analysis.py` (per-record
-  Table 6, confusion Tables 7 and 8, and paired bootstrap Table 9).
+  (CNN/LSTM), `experiments/baselines_extra.py` (TCN, ResNet-lite, gradient-boosted
+  trees, SVM, and the paired bootstrap of Table 12), `experiments/quantized_cnn.py`
+  (int8 CNN), `experiments/stats_ci.py` (bootstrap confidence intervals), and
+  `experiments/error_analysis.py` (per-record Table 6, confusion Tables 7 and 8, and
+  paired bootstrap Table 9).
 - All experiments use 5 seeds with the operating point fit on DS1 validation only;
   every table in this paper is regenerable from the released cache.
 
