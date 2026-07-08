@@ -1,6 +1,6 @@
 # NeuroBeat: Energy-Accounted Spiking Networks for Honest Inter-Patient Ventricular Ectopic Beat Detection
 
-**Authors:** [Author name], [affiliation]
+**Author:** Valerio Merlini (independent researcher)
 **Contact:** github.com/Talch87/neuro-beat
 **Status:** Preprint draft — results marked `[FROZEN: …]` are filled from the locked 5-seed run.
 
@@ -279,12 +279,31 @@ all three databases. Ensemble composition is robust: K∈{2,3,5} and different
 `[FROZEN: non-spiking CNN and LSTM on the identical DS1→DS2 split, from the
 repo checkpoints; accuracy and (where applicable) parameter/op comparison.]`
 
-### 5.5 Supraventricular beats: a data limitation
+### 5.5 Supraventricular beats: a single-lead limitation
 
-`[FROZEN: DS2 SVEB sensitivity for the pure model, with svdb augmentation, and
-with the T96 lever; INCART SVEB sensitivity for the same model.]`
-The gap between single-lead DS2 SVEB and 12-lead INCART SVEB (~0.62) indicates
-the limit is data and lead count, not architecture.
+SVEB detection is hard on one lead: supraventricular ectopic beats often differ
+from normal beats mainly in timing, not morphology, and DS1 contains few of them.
+As an incidental output of the VEB model, DS2 SVEB sensitivity is ~0.13; adding
+supraventricular-rich svdb to training raises it to ~0.24, and the T96 lever to
+~0.27 — still far from usable.
+
+We then trained a **dedicated SVEB specialist** (T96, svdb + INCART augmentation,
+SVEB-only operating point, 5 seeds). It does **not** yield a usable detector:
+
+| Seed regime | DS2 SVEB sens | DS2 SVEB PPV | DS2 VEB sens |
+|---|---|---|---|
+| calibrated (seeds 0–2) | 0.16–0.27 | 0.07–0.15 | collapses |
+| degenerate (seeds 3–4) | 0.82–0.94 | 0.04–0.06 | 0.18–0.24 |
+
+The high-sensitivity seeds reach it only by flagging almost everything as SVEB
+(PPV ≤0.06) and in doing so cannibalize the ventricular class. DS2 SVEB PPV never
+exceeds ~0.15 at any operating point, and the result is wildly seed-unstable. The
+same architecture reached SVEB sensitivity 0.62 on 12-lead INCART, so the limit
+is **lead count and data, not capacity**. Multi-lead input (MIT-BIH provides two
+leads; supraventricular beats separate better on some leads) is the natural next
+lever and is left to future work. This is a genuine negative result: on a single
+lead, supraventricular detection at usable precision is out of reach here, which
+is precisely why it must not be allowed to compromise the VEB operating point.
 
 ---
 

@@ -153,9 +153,12 @@
     limit &mdash; a seed ensemble reaches the target corner, and the cascade delivers that ensemble accuracy within the
     energy budget by running it only on flagged candidates. VEB sensitivity holds &ge; 0.90 across three databases
     (DS2, SVDB, INCART) under one frozen operating point.</p>
-    <p style="margin:0"><strong>Supraventricular (SVEB) detection</strong> is a separate, data-limited problem: about
-    0.13 on a single lead, rising to 0.62 on 12-lead INCART, so the capacity exists but the data and lead count do not.
-    It is now pursued by a dedicated SVEB specialist rather than by degrading the VEB operating point.</p>
+    <p style="margin:0"><strong>Supraventricular (SVEB) detection</strong> is a separate, single-lead-limited problem.
+    A dedicated SVEB specialist (svdb + INCART augmentation, SVEB-only operating point) does not yield a usable detector:
+    DS2 SVEB precision never exceeds ~0.15, high sensitivity comes only from flagging almost everything (and cannibalizes
+    the ventricular class), and it is wildly seed-unstable. The same architecture reaches 0.62 SVEB sensitivity on
+    12-lead INCART, so the limit is lead count, not capacity &mdash; multi-lead input is the natural next lever. This is
+    an honest negative result, and exactly why SVEB must not be allowed to compromise the VEB operating point.</p>
   </div>
 
   <h3>Cross-database VEB (gated-ensemble cascade, frozen operating point)</h3>
@@ -256,6 +259,16 @@
 
   <h2>Experiment log</h2>
   <ul class="log">
+    <li>
+      <span class="date">2026-07-08</span>
+      <p class="what"><strong>SVEB specialist: honest negative result.</strong> Trained a dedicated SVEB-first model
+      (T96, svdb + INCART augmentation, SVEB-only operating point, 5 seeds). It does not yield a usable SVEB detector on
+      single-lead DS2: precision never exceeds ~0.15, the seeds that show high sensitivity do so only by flagging almost
+      everything as SVEB (precision ~0.05) and collapse the ventricular class, and the result is wildly seed-unstable
+      (SVEB sensitivity 0.16&ndash;0.94). The naive 5-seed mean (0.49) is a mirage of over-flagging. Since the same
+      architecture reaches 0.62 on 12-lead INCART, the limit is lead count, not capacity. Multi-lead input is the
+      documented next lever; single-lead SVEB is treated as a genuine negative result.</p>
+    </li>
     <li>
       <span class="date">2026-07-07</span>
       <p class="what"><strong>NeuroBeat-VEB v1 shipped.</strong> Re-scoped to a VEB-only product and built a two-stage
