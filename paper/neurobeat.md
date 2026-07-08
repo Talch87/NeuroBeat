@@ -8,8 +8,8 @@ date: "July 2026"
 
 *Status: preprint draft. All quantitative results are from locked runs (operating
 points fit only on a DS1 validation holdout; DS2 and external databases frozen).
-Author lists for the four references marked † are pending confirmation against the
-source.*
+Reference author lists verified against source pages, except the Neurocomputing
+entry (secondary search, to confirm).*
 
 ---
 
@@ -208,9 +208,8 @@ minorities are the quantities that matter for the class-weighted objective.)*
 
 ## 4. Figures
 
-Figures 1, 3, and 4 are rendered from the locked results and included below
-(sources in `paper/figures/`). Figures 2 and 5 are specified for the camera-ready
-version; their underlying numbers are already reported in Section 7.
+Figures 1 to 5 are rendered from the locked results and included below (sources in
+`paper/figures/`).
 
 ![Figure 1](figures/fig1_protocol.png)
 
@@ -221,6 +220,14 @@ applied once to DS2 and, unchanged, to the external SVDB and INCART databases. T
 lower band shows cascade routing at inference (sparse screener on every beat;
 ensemble confirmer only on flagged beats). *Message: no test or external data
 participates in model or threshold selection.*
+
+![Figure 2](figures/fig2_frontier.png)
+
+**Figure 2 (single-stage sensitivity-PPV frontier).** DS2 VEB PPV versus
+sensitivity for single-stage models, one curve per seed (DS2 threshold sweep), with
+the three validation-locked operating points marked and the 0.90 and 0.60 target
+lines. *Message: no single operating point reaches both sensitivity >= 0.90 and
+PPV >= 0.60 reliably across seeds.*
 
 ![Figure 3](figures/fig3_pareto.png)
 
@@ -238,14 +245,11 @@ cascade on DS2, SVDB, and INCART, with the 0.90 and 0.60 target lines. *Message:
 sensitivity transfers (>= 0.90 on all three databases under one frozen operating
 point); PPV varies with class prevalence.*
 
-**Figure 2 (single-stage sensitivity/PPV frontier; to render).** DS2 VEB PPV as a
-function of sensitivity for single-stage models, one curve per seed, with the three
-named operating points marked. *Message: a single operating point cannot reach both
-sensitivity >= 0.90 and PPV >= 0.60 reliably across seeds.*
+![Figure 5](figures/fig5_sveb.png)
 
-**Figure 5 (SVEB negative result; to render).** DS2 SVEB sensitivity versus PPV per
-seed for the SVEB specialist, contrasted with the same architecture's SVEB
-sensitivity on 12-lead INCART. *Message: single-lead SVEB is unstable and
+**Figure 5 (SVEB negative result).** DS2 SVEB sensitivity versus PPV per seed for the
+SVEB specialist (single lead), contrasted with the same architecture's SVEB
+detection on 12-lead INCART. *Message: single-lead SVEB is unstable and
 low-precision; the same model separates SVEB far better with more lead information.*
 
 ---
@@ -656,9 +660,9 @@ results.
 
 ## References
 
-*Compiled and cross-checked via literature search (July 2026). Entries marked †
-have verified title, venue, and identifier, but their author lists are not yet
-confirmed against the source and must be checked before submission (Section 9 task).*
+*Compiled and cross-checked against source pages (arXiv, PubMed) and literature
+search, July 2026. The Neurocomputing entry's author list is from a secondary search
+and should be confirmed against the publisher page.*
 
 - **[AAMI-EC57]** ANSI/AAMI EC57. *Testing and Reporting Performance Results of
   Cardiac Rhythm and ST-Segment Measurement Algorithms.* Association for the
@@ -681,14 +685,17 @@ confirmed against the source and must be checked before submission (Section 9 ta
   Using Lessons From Deep Learning." *Proc. IEEE*, 111(9):1016 to 1054, 2023.
 - **[Davies2018]** M. Davies et al. "Loihi: A Neuromorphic Manycore Processor
   with On-Chip Learning." *IEEE Micro*, 38(1):82 to 99, 2018.
-- **[SNN-ECG-BSPC2021]** † "Energy efficient ECG classification with spiking
-  neural network." *Biomed. Signal Process. Control*, 2021.
-  (ScienceDirect S1746809420303098; authors to confirm.)
-- **[Chu2022]** † "A Neuromorphic Processing System With Spike-Driven SNN
-  Processor for Wearable ECG Classification." *IEEE Trans. Biomed. Circuits
-  Syst.*, 2022. (PubMed 35802543; authors to confirm.)
-- **[SparrowSNN2024]** † "SparrowSNN: A Hardware/Software Co-design for Energy
-  Efficient ECG Classification." arXiv:2406.06543, 2024. (Authors to confirm.)
-- **[AxonalDelays2025]** † "Robust ECG signal classification using spiking neural
+- **[SNN-ECG-BSPC2021]** Z. Yan, J. Zhou, W.-F. Wong. "Energy efficient ECG
+  classification with spiking neural network." *Biomed. Signal Process. Control*,
+  63:102170, 2021. doi:10.1016/j.bspc.2020.102170.
+- **[Chu2022]** H. Chu, Y. Yan, L. Gan, H. Jia, L. Qian, Y. Huan, L. Zheng, Z. Zou.
+  "A Neuromorphic Processing System With Spike-Driven SNN Processor for Wearable
+  ECG Classification." *IEEE Trans. Biomed. Circuits Syst.*, 2022.
+  (PubMed 35802543.)
+- **[SparrowSNN2024]** Z. Yan, Z. Bai, T. Mitra, W.-F. Wong. "SparrowSNN: A
+  Hardware/Software Co-design for Energy Efficient ECG Classification."
+  arXiv:2406.06543, 2024.
+- **[AxonalDelays2025]** J. Galvis-Chacon, O. Ramos-Soto, D. Oliva,
+  A. Patino-Saucedo. "Robust ECG signal classification using spiking neural
   networks with axonal delays." *Neurocomputing*, 2025.
-  (ScienceDirect S0925231225029315; authors to confirm.)
+  (ScienceDirect S0925231225029315; author list from secondary search, to confirm.)

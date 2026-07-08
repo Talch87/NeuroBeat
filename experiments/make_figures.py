@@ -13,12 +13,17 @@ Usage:
   python experiments/make_figures.py
 """
 import json
+import sys
 from pathlib import Path
 
+import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import FancyBboxPatch, FancyArrowPatch  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).parent))
+import freeze_veb_v1 as fv  # noqa: E402
 
 OUT = Path("paper/figures")
 OUT.mkdir(parents=True, exist_ok=True)
@@ -144,8 +149,58 @@ def figure4():
     save(fig, "fig4_crossdb")
 
 
+# ---------------------------------------------------------------- Figure 2
+def figure2():
+    lab = np.load(fv.CACHE / "labels_ds2.npy")
+    seeds = sorted(int(p.stem[4:]) for p in fv.CACHE.glob("seed*.pt"))
+    fig, ax = plt.subplots(figsize=(7.5, 5))
+    for s in seeds:
+        lg = np.load(fv.CACHE / f"seed{s}_ds2.npy")
+        S, P = [], []
+        for bV in np.linspace(-2, 10, 90):
+            pred = (lg + np.array([0.0, 0.0, bV, -12.0, -12.0])).argmax(1)
+            vs, vp = fv._metrics(pred, lab, 2)
+            S.append(vs); P.append(vp)
+        ax.plot(S, P, alpha=0.55, lw=1.3, label=f"seed {s}")
+    ops = {"sens-first": (0.905, 0.539), "balanced": (0.857, 0.679), "ppv-first": (0.845, 0.700)}
+    for name, (s, p) in ops.items():
+        ax.scatter(s, p, s=140, marker="X", zorder=5, edgecolor="black", color="#333")
+        ax.annotate(name, (s, p), textcoords="offset points", xytext=(7, 6), fontsize=8.5)
+    ax.axvline(0.90, ls="--", color="gray", lw=1); ax.axhline(0.60, ls="--", color="gray", lw=1)
+    ax.text(0.902, 0.30, "sens 0.90", color="gray", fontsize=8, rotation=90)
+    ax.set_xlabel("DS2 VEB sensitivity"); ax.set_ylabel("DS2 VEB PPV")
+    ax.set_title("Single-stage sensitivity-PPV frontier (per seed, DS2 sweep)")
+    ax.set_xlim(0.5, 1.0); ax.set_ylim(0.2, 0.85)
+    ax.legend(fontsize=8, loc="lower left", ncol=2); ax.grid(ls=":", alpha=0.4)
+    save(fig, "fig2_frontier")
+
+
+# ---------------------------------------------------------------- Figure 5
+def figure5():
+    # SVEB specialist, DS2, per seed (single lead): (sensitivity, PPV)
+    pts = [(0.2700, 0.0697), (0.1584, 0.1508), (0.2537, 0.0808),
+           (0.9385, 0.0630), (0.8176, 0.0382)]
+    fig, ax = plt.subplots(figsize=(7.2, 5))
+    ax.scatter([p[0] for p in pts], [p[1] for p in pts], s=95, color="#d62728",
+               edgecolor="black", zorder=3, label="SVEB specialist on DS2 (single lead, per seed)")
+    for i, (x, y) in enumerate(pts):
+        ax.annotate(f"seed {i}", (x, y), textcoords="offset points", xytext=(6, 4), fontsize=8)
+    # same architecture on 12-lead INCART (cross-database evaluation): SVEB 0.62 / 0.27
+    ax.scatter([0.62], [0.27], s=200, marker="*", color="#2ca02c", edgecolor="black",
+               zorder=4, label="same architecture on 12-lead INCART")
+    ax.annotate("12-lead INCART\nSVEB 0.62 / 0.27", (0.62, 0.27),
+                textcoords="offset points", xytext=(-10, 10), fontsize=8.5, color="#186a18")
+    ax.set_xlabel("SVEB sensitivity"); ax.set_ylabel("SVEB PPV")
+    ax.set_xlim(0, 1.0); ax.set_ylim(0, 0.4)
+    ax.set_title("Single-lead SVEB is unstable and low-precision (negative result)")
+    ax.legend(fontsize=8, loc="upper center"); ax.grid(ls=":", alpha=0.4)
+    save(fig, "fig5_sveb")
+
+
 if __name__ == "__main__":
     figure1()
+    figure2()
     figure3()
     figure4()
+    figure5()
     print("done", flush=True)
