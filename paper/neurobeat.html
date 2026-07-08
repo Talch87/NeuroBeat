@@ -196,8 +196,8 @@ data, an explicit per-beat synaptic-operation (SynOps) budget, and
 frozen cross-database testing on two external databases.</p>
 <p><strong>Result.</strong> No single operating point reaches both high
 sensitivity and high precision (VEB sensitivity 0.894 at PPV 0.490, or
-0.857 at 0.679), consistent with calibration variance under a small
-holdout. A gated-ensemble cascade, in which a sparse high-recall
+0.857 at 0.679), consistent with calibration and seed variance under a
+small holdout. A gated-ensemble cascade, in which a sparse high-recall
 screener gates a three-seed confirmer on the roughly 27% of beats it
 flags, reaches VEB sensitivity 0.923 at PPV 0.616 on DS2 within 23,385
 SynOps/beat and holds sensitivity at or above 0.90 across DS2, SVDB, and
@@ -1717,18 +1717,18 @@ band).</strong></p>
 </tr>
 </tbody>
 </table>
-<p>The curve is essentially flat. VEB sensitivity shows no upward trend
-across the range (0.85 to 0.93), so even a tenth of DS1 (291 VEB beats)
-reaches the sensitivity the full set reaches; the mean F1 rises from 10%
-to 25% of the data and then plateaus (0.659 at 25% versus 0.670 at
-100%). What more data buys is not a higher mean but lower variance: the
-F1 min-max band narrows from [0.431, 0.695] at 10% to [0.648, 0.693] at
-100%, consistent with the calibration-variance account of Sections 7.1
-and 8. The single-stage VEB result is therefore saturated with respect
-to DS1 training-set size: more same-distribution MIT-BIH data would
-stabilize the operating point but is unlikely to raise accuracy, which
-points back to architecture, encoding, and single-lead information
-(Section 7.8) as the operative limits, not sample count.</p>
+<p>VEB sensitivity shows no upward trend across the range (0.85 to
+0.93), so even a tenth of DS1 (291 VEB beats) reaches the sensitivity
+the full set reaches; the mean F1 rises from 10% to 25% of the data and
+then changes little (0.659 at 25% versus 0.670 at 100%), while the F1
+min-max band narrows from [0.431, 0.695] at 10% to [0.648, 0.693] at
+100%. In this limited two-seed diagnostic sweep, increasing
+same-distribution DS1 training data appeared to reduce seed variance
+more than raise mean F1. This suggests that the current single-stage
+result may be limited more by calibration, architecture, encoding, or
+single-lead information (Section 7.8) than by raw DS1 training-set size.
+Because each point uses only two seeds, we treat this as diagnostic
+rather than conclusive.</p>
 <h2 id="discussion">8. Discussion</h2>
 <p><strong>(a) Honest evaluation lowers headline numbers but increases
 trust.</strong> Freezing the operating point on validation rather than
