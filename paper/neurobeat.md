@@ -35,9 +35,11 @@ not both), which we attribute to calibration variance under a small validation
 holdout rather than to model capacity. A two-stage gated-ensemble cascade, in
 which a sparse high-recall screener (5,987 SynOps/beat) gates a three-seed
 ensemble confirmer that runs only on the roughly 27% of beats it flags, reaches
-VEB sensitivity 0.923 (95% bootstrap CI 0.914 to 0.932) at PPV 0.616 (0.602 to
-0.630) on DS2 within 23,385 SynOps/beat, and holds VEB sensitivity at or above
-0.90 across DS2, SVDB, and INCART under one frozen operating point.
+VEB sensitivity 0.923 at PPV 0.616 on DS2 within 23,385 SynOps/beat, and holds VEB
+sensitivity at or above 0.90 across DS2, SVDB, and INCART under one frozen operating
+point. On DS2 a patient-level bootstrap over the 22 records gives wide intervals
+(sensitivity 0.850 to 0.976, PPV 0.355 to 0.814), which we report as the honest
+uncertainty for a 22-patient test set.
 
 **Limitations and relevance.** SynOps is a compute proxy, not measured hardware
 energy. Supraventricular (SVEB) detection on a single lead is not achievable at
@@ -206,38 +208,45 @@ minorities are the quantities that matter for the class-weighted objective.)*
 
 ## 4. Figures
 
-*The following figures are specified for the camera-ready version; the underlying
-numbers are already in Sections 3 and 7. Placeholders are listed here so captions
-and scientific messages are fixed.*
+Figures 1, 3, and 4 are rendered from the locked results and included below
+(sources in `paper/figures/`). Figures 2 and 5 are specified for the camera-ready
+version; their underlying numbers are already reported in Section 7.
 
-**Figure 1 (protocol diagram).** DS1 is split into a training set and a
+![Figure 1](figures/fig1_protocol.png)
+
+**Figure 1 (protocol / no-leakage).** DS1 is split into a training set and a
 patient-disjoint validation holdout (records 201, 207, 223). The operating point is
 selected only on the validation holdout and then frozen. The frozen model is
 applied once to DS2 and, unchanged, to the external SVDB and INCART databases. The
-cascade path (sparse screener on every beat; ensemble confirmer only on flagged
-beats) is shown as a routing overlay. *Message: no test or external data
+lower band shows cascade routing at inference (sparse screener on every beat;
+ensemble confirmer only on flagged beats). *Message: no test or external data
 participates in model or threshold selection.*
 
-**Figure 2 (single-stage sensitivity/PPV frontier).** DS2 VEB PPV as a function of
-sensitivity for single-stage models, one curve per seed, with the three named
-operating points (sens-first, balanced, ppv-first) marked. *Message: a single
-operating point cannot reach both sensitivity >= 0.90 and PPV >= 0.60 reliably
-across seeds.*
+![Figure 3](figures/fig3_pareto.png)
 
-**Figure 3 (accuracy-energy Pareto).** DS2 VEB F1 (or sensitivity at fixed PPV)
-versus SynOps/beat for single-stage SNN, naive cascade, full ensemble, and gated
-ensemble, with CNN and LSTM shown on a secondary MACs axis and explicitly labelled
-as a different operation unit. *Message: the gated ensemble occupies the
-within-budget corner; the full ensemble is more accurate but over budget.*
+**Figure 3 (accuracy-energy Pareto).** DS2 VEB F1 versus operations per beat, log
+scale. SNN points are SynOps; CNN and LSTM are MACs, a different operation unit, and
+are marked as such. The 25k-SynOps budget is drawn as a reference line for the SNN
+points. *Message: the gated ensemble occupies the within-budget corner; the full
+ensemble is more accurate but over budget; the dense baselines sit orders of
+magnitude higher in operation count.*
 
-**Figure 4 (cross-database transfer).** VEB sensitivity and PPV for the frozen
-gated cascade on DS2, SVDB, and INCART, with beat counts annotated. *Message:
-sensitivity transfers (>= 0.90 on all three); PPV varies with class prevalence.*
+![Figure 4](figures/fig4_crossdb.png)
 
-**Figure 5 (SVEB negative result).** DS2 SVEB sensitivity versus PPV per seed for
-the SVEB specialist, contrasted with the same architecture's SVEB sensitivity on
-12-lead INCART. *Message: single-lead SVEB is unstable and low-precision; the same
-model separates SVEB far better with more lead information.*
+**Figure 4 (cross-database transfer).** VEB sensitivity and PPV for the frozen gated
+cascade on DS2, SVDB, and INCART, with the 0.90 and 0.60 target lines. *Message:
+sensitivity transfers (>= 0.90 on all three databases under one frozen operating
+point); PPV varies with class prevalence.*
+
+**Figure 2 (single-stage sensitivity/PPV frontier; to render).** DS2 VEB PPV as a
+function of sensitivity for single-stage models, one curve per seed, with the three
+named operating points marked. *Message: a single operating point cannot reach both
+sensitivity >= 0.90 and PPV >= 0.60 reliably across seeds.*
+
+**Figure 5 (SVEB negative result; to render).** DS2 SVEB sensitivity versus PPV per
+seed for the SVEB specialist, contrasted with the same architecture's SVEB
+sensitivity on 12-lead INCART. *Message: single-lead SVEB is unstable and
+low-precision; the same model separates SVEB far better with more lead information.*
 
 ---
 
@@ -427,14 +436,20 @@ PPV subject to cascade sensitivity >= 0.90; both on validation only):
 | MIT-BIH SVDB | 184,520 | 9,941 | 0.904 | 0.377 | 0.345 |
 | INCART | 175,811 | 20,006 | 0.901 | 0.835 | 0.241 |
 
-On DS2 the 95% bootstrap confidence intervals are sensitivity [0.914, 0.932] and
-PPV [0.602, 0.630]; the PPV interval lies above 0.60. Average energy on DS2 is
-`5,987 + 0.271 * 3 * 21,433 = 23,385` SynOps/beat, within the 25,000 budget. The
-cascade meets sensitivity >= 0.90, PPV >= 0.60, and the energy budget
-simultaneously on DS2, and holds sensitivity at or above 0.90 across all three
-databases. Robustness to the confirmer composition: ensembles of K in {2, 3, 5}
-members and different 3-member subsets all give DS2 sensitivity >= 0.90 at PPV
-between 0.59 and 0.64.
+We report two bootstrap intervals for the DS2 point estimates. A beat-level
+bootstrap (resampling beats independently, 2,000 resamples) gives sensitivity
+[0.914, 0.932] and PPV [0.602, 0.630]. A patient-level bootstrap (resampling the 22
+DS2 records with replacement, which respects within-record correlation) gives much
+wider intervals: sensitivity [0.850, 0.976] and PPV [0.355, 0.814]. The gap between
+the two is large because VEB beats are concentrated in a minority of records, so a
+few patients dominate the estimate. The patient-level interval is the honest one to
+quote: the point estimates meet the targets on DS2's specific patient composition,
+but per-patient behaviour varies substantially, and a wider prospective evaluation
+would be needed to tighten this. Average energy on DS2 is
+`5,987 + 0.271 * 3 * 21,433 = 23,385` SynOps/beat, within the 25,000 budget.
+Robustness to the confirmer composition: ensembles of K in {2, 3, 5} members and
+different 3-member subsets all give DS2 sensitivity >= 0.90 at PPV between 0.59 and
+0.64.
 
 ### 7.4 Accuracy-energy Pareto (Figure 3)
 
@@ -476,6 +491,17 @@ comparison would be strengthened by quantized CNN and temporal-convolutional
 baselines and by measured microcontroller energy (Section 9). Within these caveats,
 the gated cascade also attains the highest PPV of any model at comparable
 sensitivity.
+
+Post-training int8 weight quantization of the CNN (per-tensor symmetric, weights
+only, activations left in float, 3 seeds) preserves DS2 VEB detection: fp32
+0.951 / 0.417 versus int8 0.951 / 0.444 (sensitivity / PPV), with weight memory
+reduced from 11.6 kB to 3.1 kB. This is the fair embedded operating point for the
+dense baseline: the MAC count is unchanged (356k/beat), but an int8 MAC is
+materially cheaper and smaller than an fp32 MAC on typical microcontrollers.
+Quantization therefore closes part of the compute gap in energy-per-operation terms
+without changing the operation count, and a full int8 pipeline (quantized
+activations, with calibration) plus measured board energy is the comparison we
+recommend for a camera-ready version (Section 9).
 
 ### 7.6 Supraventricular beats: a single-lead negative result
 
@@ -544,9 +570,9 @@ under the same protocol, and we present it as such.
 differences could reflect annotation-convention differences between databases rather
 than only prevalence. The single-model seed variance could partly reflect
 optimization noise rather than only calibration; the ensemble would help in either
-case. The bootstrap intervals treat beats as independent, which slightly
-understates uncertainty because beats within a record are correlated; a record-level
-or patient-level bootstrap would widen them (Section 9).
+case. We report both beat-level and patient-level bootstrap intervals (Section 7.3);
+the patient-level interval is much wider because a few records dominate the DS2 VEB
+count, and it is the interval we treat as the honest uncertainty.
 
 ---
 
@@ -569,8 +595,10 @@ or patient-level bootstrap would widen them (Section 9).
   composition, so PPV numbers should be read together with the beat counts.
 - **Single lead.** Results use one lead; SVEB in particular appears to need more
   lead information.
-- **Independence assumption in intervals.** Beat-level bootstrap understates
-  uncertainty relative to a patient-level resampling.
+- **Large between-patient variance.** With only 22 DS2 patients, a patient-level
+  bootstrap gives wide intervals (VEB sensitivity 0.85 to 0.98, PPV 0.36 to 0.81).
+  The point estimates hold for DS2's composition, but per-patient behaviour varies
+  substantially, so a larger prospective cohort is needed to tighten them.
 - **No prospective or clinical-workflow validation, and no subgroup or demographic
   fairness analysis.** Nothing here has been validated in a deployment or against
   regulatory-grade endpoints.
