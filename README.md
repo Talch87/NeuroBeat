@@ -7,7 +7,7 @@
   <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-2.11%20(CUDA)-ee4c2c">
   <img alt="tests" src="https://img.shields.io/badge/tests-60%20passing-2ea44f">
   <img alt="split" src="https://img.shields.io/badge/split-inter--patient%20(DS1%E2%86%92DS2)-0aa">
-  <img alt="status" src="https://img.shields.io/badge/phase%201-proof%20of%20concept-f5a623">
+  <img alt="VEB v1" src="https://img.shields.io/badge/VEB%20v1-0.923%20sens%20%2F%200.616%20PPV%20%2F%2023.4k%20SynOps-2ea44f">
   <img alt="license" src="https://img.shields.io/badge/license-AGPL--3.0%20%2F%20commercial-blue">
 </p>
 
@@ -33,10 +33,21 @@ step. This event-driven behavior maps well to low-power hardware. NeuroBeat uses
 property: it encodes the ECG as sparse spike events and runs a small SNN on them, so the
 same design could later run on a low-power chip.
 
-The classifier in this project has 1,029 parameters. On patients it was not trained on,
-it detects about 81% of ventricular ectopic beats (VEB), which is close to a conventional
-CNN roughly three times its size. This is a software proof of concept, meant to test
-whether the approach works before spending on hardware.
+The shipped detector, **NeuroBeat-VEB v1**, is a two-stage gated-ensemble cascade for
+ventricular ectopic beat (VEB) detection. On patients it was not trained on (MIT-BIH DS2)
+it reaches **VEB sensitivity 0.923 at PPV 0.616 within 23,385 SynOps per beat**, and holds
+VEB sensitivity at or above 0.90 across three databases (DS2, SVDB, INCART) under one frozen
+operating point. A [validation-locked, energy-accounted preprint](paper/neurobeat.md)
+documents the full evaluation.
+
+This is a research proof of concept, not a clinical or cleared device. Its main contribution
+is evaluation discipline (an operating point locked on validation and never tuned on the test
+set, an explicit per-beat energy budget, frozen cross-database testing), not accuracy
+leadership: under the identical protocol, stronger non-spiking baselines (a compact TCN,
+a ResNet-lite CNN, gradient-boosted trees) match or beat the cascade on accuracy. The spiking
+model's case rests on per-beat operation count and neuromorphic suitability, pending measured
+hardware energy. Single-lead supraventricular (SVEB) detection is reported as an honest
+negative result.
 
 ## How it works
 
@@ -96,56 +107,53 @@ numbers.
 
 ## Results (MIT-BIH, inter-patient DS1 to DS2)
 
-DS1 train = 51,000 beats. DS2 test = 49,693 beats. 20 epochs, seed 1337, inverse-frequency
-class weighting for all models. Metrics per AAMI EC57.
+**NeuroBeat-VEB v1 (gated-ensemble cascade).** A sparse high-recall screener runs on every
+beat and gates a three-seed ensemble confirmer that runs only on the ~27% of beats it flags.
+Both operating points are fit only on a DS1 validation holdout and frozen for all test data.
 
-| Model | Params | VEB Sens | VEB PPV | SVEB Sens | SVEB PPV | Overall Acc | SynOps/beat |
-|:--|--:|:--:|:--:|:--:|:--:|:--:|--:|
-| SNN (delta) | 1,029 | 0.808 | 0.320 | 0.407 | 0.064 | 0.629 | 33,277 |
-| CNN1D | 2,885 | 0.835 | 0.770 | 0.569 | 0.093 | 0.684 | n/a |
-| LSTM | 17,477 | 0.626 | 0.160 | 0.020 | 0.015 | 0.567 | n/a |
+| Database | Beats | VEB Sens | VEB PPV | Flag rate |
+|:--|--:|:--:|:--:|:--:|
+| MIT-BIH DS2 (held-out) | 49,693 | 0.923 | 0.616 | 0.271 |
+| SVDB (supraventricular-rich, 128 Hz) | 184,520 | 0.904 | 0.377 | 0.345 |
+| INCART (12-lead, 257 Hz) | 175,811 | 0.901 | 0.835 | 0.241 |
 
-Notes on the results:
+VEB sensitivity holds at or above 0.90 across all three databases under one frozen operating
+point; PPV varies with each database's class mix. The cascade meets all three targets on DS2
+at once: sensitivity >= 0.90, PPV >= 0.60, and <= 25,000 SynOps/beat.
 
-- The SNN has the fewest parameters (1,029) and reaches 0.808 VEB sensitivity on unseen
-  patients, close to the CNN (0.835) and higher than the LSTM (0.626).
-- Class weighting raises minority-class sensitivity but lowers precision, so the SNN has
-  more false positives on VEB (PPV 0.320). SVEB is hard for all three models because
-  supraventricular beats are subtle on a single lead.
-- Overall accuracy is low on purpose. The models are not optimized for it, since per-class
-  sensitivity is the more useful metric here.
+**Honest context.** The spiking cascade is not the most accurate DS2 VEB detector. Under the
+identical protocol, a compact TCN (0.939 / 0.729), a ResNet-lite CNN (0.910 / 0.761), and
+gradient-boosted trees (0.974 / 0.678) all reach higher VEB F1; the cascade beats the
+higher-sensitivity, lower-precision CNN and linear SVM. What separates it is operation count
+(~23k SynOps vs 0.5-1M MACs) and mapping onto neuromorphic hardware, an operation-count
+advantage under a proxy pending measured energy. A patient-level bootstrap over the 22 DS2
+records gives wide intervals (sensitivity 0.85-0.98, PPV 0.36-0.81), the honest uncertainty
+for 22 patients. Replacing annotated R-peaks with a standard detector (XQRS) at inference
+lowers end-to-end VEB to 0.884 / 0.593 (below the 0.90 target, but a modest drop). Full
+analysis, tables, and figures are in the [preprint](paper/neurobeat.md).
 
-### Current work: raising VEB precision honestly
+**Phase 1 baseline (single-model, for reference).** DS1 train = 44,573 beats, DS2 test =
+49,693 beats. Inverse-frequency class weighting. Metrics per AAMI EC57.
 
-The open question is whether a small SNN can reach VEB sensitivity >= 0.90 and VEB PPV >= 0.50
-at the same time, on the inter-patient split, within a 25,000 SynOps per beat budget. Progress
-so far:
+| Model | Params | VEB Sens | VEB PPV | SVEB Sens | SVEB PPV | SynOps/beat |
+|:--|--:|:--:|:--:|:--:|:--:|--:|
+| SNN (delta) | 1,029 | 0.808 | 0.320 | 0.407 | 0.064 | 33,277 |
+| CNN1D | 2,885 | 0.835 | 0.770 | 0.569 | 0.093 | n/a |
+| LSTM | 17,477 | 0.626 | 0.160 | 0.020 | 0.015 | n/a |
 
-- A low-timestep count-pooled encoder ([`encoding/beat.py`](src/neurocardio/encoding/beat.py))
-  pools spikes into fewer time bins and trains about 16x faster.
-- RR-interval timing features (patient-normalized pre-RR and post-RR ratios) fed into the
-  hidden layer. Premature beats have a short pre-RR, a cue that beat shape alone does not carry.
-  With a small hidden layer this roughly doubled VEB precision at 90% recall, from about 0.15 to 0.32.
-- Widening the hidden layer to 256 units with denser input spikes lifted VEB precision at 90%
-  recall to about 0.68, clearing the 0.50 target. So discrimination is not the blocker.
-
-The catch is energy. The configuration that discriminates well costs about 108,000 SynOps per
-beat, roughly 4.3x the 25,000 budget, because a wider hidden layer and denser spikes are also
-what drive SynOps up. Current work maps the best discrimination achievable within the budget
-(see [`experiments/lock_snn_rr.py`](experiments/lock_snn_rr.py), operating points fit only on a
-DS1 holdout and frozen for DS2). Live status is on the
-[results dashboard](https://talch87.github.io/neuro-beat/).
+The gated cascade above supersedes this single-model baseline; the row is kept to show the
+starting point. Live status is on the [results dashboard](https://talch87.github.io/neuro-beat/).
 
 ## Roadmap
 
 ```mermaid
 flowchart TD
-    P1["Phase 1: Software core (done)<br/>small SNN, inter-patient results, energy proxy"]
-    P2["Phase 2: Hardware<br/>analog front-end + MCU / Loihi / Akida, on-device metrics"]
+    P1["Phase 1: Software core (done)<br/>gated cascade, inter-patient + cross-DB, energy proxy, preprint"]
+    P2["Phase 2: Hardware<br/>analog front-end + MCU / Loihi / Akida, measured on-device energy"]
     P3["Phase 3: Clinical validation<br/>retrospective hospital data"]
     P4["Phase 4: Regulatory<br/>IEC 62304, MDR Class IIa, EU AI Act"]
     P5["Phase 5: Pilots<br/>prospective clinical study"]
-    P1 -->|"gate: VEB sensitivity >= 0.90 inter-patient"| P2 --> P3 --> P4 --> P5
+    P1 -->|"gate met: VEB sensitivity 0.923 inter-patient"| P2 --> P3 --> P4 --> P5
 ```
 
 Phase 1 (this repository) is the software core. Later phases add hardware, clinical
@@ -168,10 +176,14 @@ src/neurocardio/
   deploy/     energy.py (SynOps + spike-count energy proxy)
   stream/     online R-peak detector and StreamDetector (timestamped anomaly logging)
   cli.py      download (mitdb/svdb/incartdb), train, evaluate, crossdb (external-DB test)
-experiments/  sweep_snn.py, search_snn.py (GPU sweeps), lock_snn.py / lock_snn_rr.py
-              (val-locked honest evaluation, no test-set tuning)
+experiments/  freeze_veb_v1.py (single-stage), gated_ensemble_veb.py (cascade),
+              baselines_veb.py / baselines_extra.py (CNN/LSTM/TCN/ResNet-lite/GBT/SVM),
+              quantized_cnn.py (int8), error_analysis.py, stats_ci.py, end2end_rpeak.py,
+              learning_curve.py, lock_snn_rr.py (val-locked evaluation, no test-set tuning)
+models/       neurobeat-veb-v1/ (frozen weights, operating points, model card)
+paper/        neurobeat.md (preprint) + neurobeat.tex / .html, figures/
 docs/         index.html (results dashboard, served via GitHub Pages)
-tests/        52 tests, one per module, hermetic (no network, small wfdb fixtures)
+tests/        60 tests, one per module, hermetic (no network, small wfdb fixtures)
 ```
 
 ## Setup
@@ -193,6 +205,16 @@ uv run neurocardio train --config configs/lstm.yaml --out runs/lstm.pt
 
 `configs/{snn,cnn,lstm}.yaml` set `seed: 1337` and `device: auto` (GPU if available,
 otherwise CPU). The SNN uses delta-encoded spikes; the CNN and LSTM use raw beats.
+
+To reproduce the shipped **NeuroBeat-VEB v1** cascade and its analyses (all operating
+points fit only on the DS1 holdout and frozen for the test databases):
+
+```bash
+python experiments/freeze_veb_v1.py       # single-stage, val-locked
+python experiments/gated_ensemble_veb.py  # gated-ensemble cascade (the v1 artifact)
+python experiments/baselines_extra.py     # TCN/ResNet-lite/GBT/SVM + paired bootstrap
+python experiments/end2end_rpeak.py       # detected-R-peak end-to-end ablation
+```
 
 ### External validation (cross-database)
 
